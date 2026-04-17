@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>End-to-end demo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
+    <!-- Loade js-interpreter FIRST, then override its acorn version with the modern acorn version that has a CDN and can be used with the modern acorn-loose.
+         We then use the modern acorn but specify that we are parsing ecma version 5, which is what JS-interpreter expects.
+         This should be fine, nothing can go wrong.-->
+    <script src="https://cdn.jsdelivr.net/npm/js-interpreter/lib/js-interpreter.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/acorn@8.14.0/dist/acorn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/acorn-loose@8.4.0/dist/acorn-loose.min.js"></script>
+    <script src="visualize.js"></script>
+    <script src="end_to_end_helpers.js"></script>
+    <link rel="stylesheet" href="visualize.css">
+    <link rel="stylesheet" href="end_to_end.css">
+</head>
+<body>
+
+    <div id="codebox">
+        <div id="editor-wrapper">
+            <div id="editor"></div>
+        </div>
+        <div id="buttons">
+            <button id="run" onclick="parseRunCode()">Run</button>
+        </div>
+    </div>
+
+    <div id="popups"></div>
+
+    <script>
+
+        let editor = ace.edit(document.getElementById('editor'),
+            {
+                minLines: 3,
+                maxLines: Infinity,
+            }
+        )
+        editor.session.setMode('ace/mode/javascript');
+        editor.setValue(`
+var nodes = document.querySelectorAll('dialog');
+for (var i = 0; i < nodes.length; i++) {
+  nodes[i].remove();
+}`.trim())
+        editor.clearSelection();
+
+
+        setTimeout(make_popup, 1000)
+
+        let resetParse = null;
+
+        function parseRunCode(){
+            // Clean up previous run if exists
+            if (resetParse) {
+                resetParse();
+            }
+            let replace_result = replace_with_parsed(document.getElementById('editor-wrapper'), editor.getValue());
+            resetParse = replace_result.reset
+            replace_result.anim_promise.then(async function(anim_result) {
+                console.log(anim_result)
+                if(replace_result.parsed_data.parse_success){
+                    // code was parsed successfully - let's run it
+                    const interpret_result = await interpretCode(replace_result.codeElem, replace_result.parsed_data.ast, 150, true, initAutoDomInterpreter);
+
+                    // Create the trace slider
+                    let condensed_trace = interpret_result.executionTrace.filter(getTraceStepFilter())
+                    const condensedSlider = createTraceSlider(condensed_trace, replace_result.codeElem);
+                    // const fullSlider = createTraceSlider(interpret_result.executionTrace, replace_result.codeElem);
+
+                    // Add it to the DOM
+                    replace_result.codeElem.parentElement.parentElement.appendChild(condensedSlider);
+                    // replace_result.codeElem.parentElement.parentElement.appendChild(fullSlider);
+                }
+            })
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Code Visualizer Demo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
+    <!-- Loade js-interpreter FIRST, then override its acorn version with the modern acorn version that has a CDN and can be used with the modern acorn-loose.
+         We then use the modern acorn but specify that we are parsing ecma version 5, which is what JS-interpreter expects.
+         This should be fine, nothing can go wrong.-->
+    <script src="https://cdn.jsdelivr.net/npm/js-interpreter/lib/js-interpreter.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/acorn@8.14.0/dist/acorn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/acorn-loose@8.4.0/dist/acorn-loose.min.js"></script>
+    <script src="visualize.js"></script>
+    <link rel="stylesheet" href="visualize.css">
+</head>
+<body>
+    <h1>JavaScript AST Visualizer</h1>
+    <div style="width: 50%">
+        <div id="code-container" ></div>
+        <div id="buttons">
+            <button id="parse" onclick="startParse()">Parse into HTML</button>
+            <button id="animate" onclick="startAnimate()">Animate parsing</button>
+            <button id="run" onclick="startInterpret()">Animate running/interpreting code</button>
+        </div>
+        <div><pre id="viz-container"></pre></div>
+        <div id="slider-container"></div>
+    </div>
+
+    <script>
+        let editor = ace.edit(document.getElementById('code-container'),
+            {
+                minLines: 10,
+                maxLines: 25
+            }
+        )
+        editor.session.setMode('ace/mode/javascript');
+        editor.setValue(`
+total = 0;
+for(var i=0; i<1; i++){
+    total += i;
+}`.trim())
+
+        let codeElem = null
+        let parsed = null  // data returned from parsing the code
+
+        function startParse(){
+            let code = editor.getValue();
+            console.log(code)
+            parsed = parseIntoHTML(code)
+
+            // parsed.html is a string representation of nested HTML spans, where each span maps onto a node in the code's parsed AST (returned as parsed.ast).
+            // The AST nodes in both the HTML and AST representation are labeled with UUIDs, which means you can track the nodes between the different representations
+            let vizContainer = document.getElementById('viz-container')
+            vizContainer.innerHTML = parsed.html
+            codeElem = vizContainer.children[0] // we store the actual element that now contains the HTML representation, so that future visualizations can access and animate the element
+
+            // show as "unparsed" at the beginning, so the parsing animation makes more sense
+            //  (normally you'd do the parsing animation immediately after parsing and before showing the parsed code, probably - the animation is what reveals the parsed code)
+            document.getElementById('viz-container').querySelectorAll('.ast-node').forEach(function (n){
+                n.classList.add('unparsed');
+            })
+        }
+
+        function startAnimate() {
+            // animateParse expects an HTML element that's the top-level element of the HTML string returned from parseIntoHTML.
+            animateParse(codeElem);
+        }
+
+        function startInterpret() {
+            interpretCode(codeElem, parsed.ast).then((interpret_result) => {
+                // Create a trace slider element that controls which step in the execution strace is shown in the visualization contained in codeElem
+                const fullTrace = interpret_result.executionTrace;
+                const fullSlider = createTraceSlider(fullTrace, codeElem);
+                document.getElementById('slider-container').appendChild(fullSlider)
+
+                // The full trace slider can be too detailed to be useful. It's also possible to simply filter out certain steps and create a slider based on a "condensed" trace.
+                // getTraceStepFilter() creates a reasonable default for filtering the trace slider.
+                const condensedTrace = fullTrace.filter(getTraceStepFilter());
+                const condensedSlider = createTraceSlider(condensedTrace, codeElem);
+                document.getElementById('slider-container').appendChild(condensedSlider)
+            })
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,297 @@
+.ast-node {
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    display: inline;
+    position: relative;
+    border-radius: 3px;
+    line-height: 1.6;
+    box-shadow: -1px 1px 4px;
+    background-color: aliceblue;
+}
+
+.ast-node.unparsed {
+    box-shadow: none;
+}
+
+/* Visual indicator that node is the active "parsing" state, separate from position */
+.ast-node.parsing {
+    outline: 1px dashed #ff9800;
+    background-color: cornsilk;
+    box-shadow: -1px 1px 5px;
+}
+
+.ast-node.interpreting {
+    outline: 1px dashed blue;
+    background-color: aquamarine;
+    box-shadow: -1px 1px 5px;
+    /*top: -3px;*/
+    /*left: 7px;*/
+}
+
+/* top-level node (in the state stack) that is actively being interpreted*/
+.ast-node.interpreting.top {
+    background-color: aqua;
+    outline-offset: 1px;
+    outline: 2px solid gray;
+}
+
+
+/* Wrapper for code - provides positioning context for tooltip */
+.code-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+/* Error marker - empty span at error position */
+.parse-error-marker {
+    display: inline-block;
+    width: 0;
+    height: 1em;
+    position: relative;
+    vertical-align: baseline;
+}
+
+/* When error is active, show a red indicator */
+.parse-error-marker.error-active {
+    width: 2px;
+    background-color: #ff3333;
+    box-shadow: 0 0 8px #ff3333;
+}
+
+/* Node that contains the error */
+.ast-node.error-node {
+    background-color: rgba(255, 51, 51, 0.2) !important;
+    border: 1px solid #ff3333 !important;
+}
+
+/* Unified Code Tooltips */
+.code-tooltip {
+    position: absolute;
+    z-index: 10000;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: translateX(-50%); /* Center the tooltip on its left position */
+    width: max-content;
+    max-width: 400px;
+}
+
+.code-tooltip-content {
+    background: #333;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.code-tooltip-arrow {
+    width: 0;
+    height: 0;
+    margin: 0 auto;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid #333;
+}
+
+/* Arrow position when tooltip is below the target */
+.code-tooltip.tooltip-below .code-tooltip-arrow {
+    order: -1;
+    border-top: none;
+    border-bottom: 8px solid #333;
+}
+
+/* Parse error tooltip styling */
+.code-tooltip-parse-error .code-tooltip-content {
+    background-color: #ff3333;
+}
+
+.code-tooltip-parse-error .code-tooltip-arrow {
+    border-top-color: #ff3333;
+}
+
+.code-tooltip-parse-error.tooltip-below .code-tooltip-arrow {
+    border-bottom-color: #ff3333;
+}
+
+/* Interpreter value tooltip styling */
+.code-tooltip-value .code-tooltip-content {
+    background: #2563eb;
+}
+
+.code-tooltip-value .code-tooltip-arrow {
+    border-top-color: #2563eb;
+}
+
+.code-tooltip-value.tooltip-below .code-tooltip-arrow {
+    border-bottom-color: #2563eb;
+}
+
+/* Interpreter runtime error (exception) tooltip styling */
+.code-tooltip-runtime-error .code-tooltip-content {
+    background: #dc2626;
+}
+
+.code-tooltip-runtime-error .code-tooltip-arrow {
+    border-top-color: #dc2626;
+}
+
+.code-tooltip-runtime-error.tooltip-below .code-tooltip-arrow {
+    border-bottom-color: #dc2626;
+}
+
+/* Optional: highlight the top node */
+/* TODO: merge with existing top styling (also only outline if tooltip? also secondary styling for "hidden" tooltip?*/
+.ast-node.interpreting.top.has-value {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+.ast-node.interpreting.top.side-effect {
+    outline: 2px solid orangered;
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* Trace Slider Styles */
+.trace-slider-container {
+    padding: 10px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin: 10px 0;
+}
+
+.trace-slider-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.trace-slider-wrapper {
+    flex: 1;
+    position: relative;
+    height: 24px;
+    display: flex;
+    align-items: center;
+}
+
+/* Custom notches container */
+.trace-slider-notches {
+    position: absolute;
+    top: 50%;
+    left: 9px; /* Half of thumb width */
+    right: 9px;
+    transform: translateY(-50%);
+    height: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.trace-slider-notch {
+    width: 2px;
+    height: 10px;
+    background: #999;
+    border-radius: 1px;
+    transition: all 0.2s;
+}
+
+.trace-slider {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #ddd;
+    outline: none;
+    -webkit-appearance: none;
+    margin: 0;
+    position: relative;
+    z-index: 2;
+}
+
+.trace-slider::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 3px;
+    background: #ddd;
+}
+
+.trace-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #2563eb;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: -6px;
+    position: relative;
+    z-index: 3;
+}
+
+.trace-slider::-webkit-slider-thumb:hover {
+    background: #1d4ed8;
+}
+
+.trace-slider::-moz-range-track {
+    height: 6px;
+    border-radius: 3px;
+    background: #ddd;
+}
+
+.trace-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #2563eb;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s;
+    position: relative;
+    z-index: 3;
+}
+
+.trace-slider::-moz-range-thumb:hover {
+    background: #1d4ed8;
+}
+
+.trace-slider-button {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    background: white;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.trace-slider-button:hover:not(:disabled) {
+    background: #f0f0f0;
+    border-color: #2563eb;
+}
+
+.trace-slider-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.trace-slider-play[data-playing="true"] {
+    background: #2563eb;
+    color: white;
+    border-color: #2563eb;
+}
+
+.trace-slider-play[data-playing="true"]:hover {
+    background: #1d4ed8;
+}
