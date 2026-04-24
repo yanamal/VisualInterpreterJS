@@ -527,8 +527,6 @@ function replace_with_parsed(elem, code) {
     elem.parentNode.insertBefore(wrapper, elem);
 
     // Do a "card flip" rotation (halfway, to be invisible) out using Web Animations API
-    // TODO: cross-fade with parsed version?..
-    //   or better yet, a card-flip sort of transition?
     const rotateOut = elem.animate(
         [{ transform: 'rotateX(0deg)' }, { transform: 'rotateX(90deg)' }],
         {
@@ -576,7 +574,7 @@ function replace_with_parsed(elem, code) {
 }
 
 // interpret the previously parsed code associated with codeElem and codeAst
-// If animate is set to true, animate the interpreting process as the interpreter runs.
+// If anim_time is > 0, animate the interpreting process as the interpreter runs.
 // optionally provide an init function for the interpeter (e.g. special set-up for the environment that the code being interpreted can interact with)
 async function interpretCode(codeElem, codeAst, anim_time=300, accelerate=false, interpreterInitFunc=null){
     let interpreter = new window.Interpreter(codeAst, interpreterInitFunc);
@@ -726,6 +724,7 @@ function stepAndTrace(interpreter, codeElem=null, anim_time=300){
     let exception = null;
     try {
         step_executed = interpreter.step(); // Returns whether the step was successfully executed by the interpreter
+        //TODO: if step is paused (waiting for async function to complete), and the step had to wait for it/do nothing, then step_executed is true, but nothing happens.
     } catch(e) {
         exception = {
             message: e.message || e.toString(),
