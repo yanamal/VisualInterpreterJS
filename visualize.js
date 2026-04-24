@@ -701,6 +701,22 @@ function getCloneOrDesc(value){
 // We deal with this edge case by suppressing the value if the node that was just evaluated (e.g. BlockStatement) is not a type of node that's expected to produce a value.
 // Hopefully there aren't any exciting node types that only **sometimes** produce a value.
 function stepAndTrace(interpreter, codeElem=null, anim_time=300){
+    // If the interpreter is paused waiting for an async callback, poll until it resumes.
+    // While paused, step() is a no-op that returns true, which would cause the execution
+    // loop to spin recording duplicate identical steps. We wait here instead.
+    if (interpreter.paused_) {
+        return new Promise(function(resolve) {
+            function poll() {
+                if (!interpreter.paused_) {
+                    resolve(stepAndTrace(interpreter, codeElem, anim_time));
+                } else {
+                    setTimeout(poll, 10);
+                }
+            }
+            setTimeout(poll, 10);
+        });
+    }
+
     // Capture the state BEFORE the step executes
     const preStepStack = interpreter.stateStack.map(state => ({
         uuid: state.node.uuid,
@@ -724,7 +740,6 @@ function stepAndTrace(interpreter, codeElem=null, anim_time=300){
     let exception = null;
     try {
         step_executed = interpreter.step(); // Returns whether the step was successfully executed by the interpreter
-        //TODO: if step is paused (waiting for async function to complete), and the step had to wait for it/do nothing, then step_executed is true, but nothing happens.
     } catch(e) {
         exception = {
             message: e.message || e.toString(),

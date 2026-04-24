@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Async Code Visualizer Demo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js"></script>
+    <!-- Load js-interpreter FIRST, then override its acorn version with the modern acorn version that has a CDN and can be used with the modern acorn-loose.
+         We then use the modern acorn but specify that we are parsing ecma version 5, which is what JS-interpreter expects.
+         This should be fine, nothing can go wrong.-->
+    <script src="https://cdn.jsdelivr.net/npm/js-interpreter/lib/js-interpreter.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/acorn@8.14.0/dist/acorn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/acorn-loose@8.4.0/dist/acorn-loose.min.js"></script>
+    <script src="visualize.js"></script>
+    <link rel="stylesheet" href="visualize.css">
+</head>
+<body>
+    <h1>Async JavaScript AST Visualizer</h1>
+    <p>Demonstrates async interpreter support: <code>wait(ms)</code> pauses the interpreter until the timer fires, and <code>moveSquare(x)</code> draws on the canvas.</p>
+    <div style="width: 60%">
+        <div id="code-container"></div>
+        <div id="buttons">
+            <button id="run" onclick="startInterpret()">Run &amp; Visualize</button>
+        </div>
+        <canvas id="animation-canvas" width="320" height="100"
+                style="border: 1px solid #ccc; margin: 10px 0; display: block; border-radius: 4px;"></canvas>
+        <div><pre id="viz-container"></pre></div>
+        <div id="slider-container"></div>
+    </div>
+
+    <script>
+        let editor = ace.edit(document.getElementById('code-container'), {
+            minLines: 8,
+            maxLines: 20
+        });
+        editor.session.setMode('ace/mode/javascript');
+        editor.setValue(
+`moveSquare(0);
+wait(1000);
+moveSquare(250);
+`
+        );
+
+        let codeElem = null;
+        let parsed = null;
+
+        const canvas = document.getElementById('animation-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function interpreterInit(interpreter, globalObject) {
+            // wait(ms) - async: pauses the interpreter until the timeout fires
+            interpreter.setProperty(globalObject, 'wait',
+                interpreter.createAsyncFunction(function(ms, callback) {
+                    setTimeout(callback, Number(ms));
+                })
+            );
+
+            // moveSquare(x) - draw a square at horizontal position x on the canvas
+            interpreter.setProperty(globalObject, 'moveSquare',
+                interpreter.createNativeFunction(function(x) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#4a9eff';
+                    ctx.beginPath();
+                    ctx.roundRect(Number(x), 15, 50, 65, 6);
+                    ctx.fill();
+                })
+            );
+        }
+
+        function startInterpret() {
+            const code = editor.getValue();
+            parsed = parseIntoHTML(code);
+
+            const vizContainer = document.getElementById('viz-container');
+            vizContainer.innerHTML = parsed.html;
+            codeElem = vizContainer.children[0];
+
+            document.getElementById('slider-container').innerHTML = '';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            interpretCode(codeElem, parsed.ast, 300, false, interpreterInit).then((result) => {
+                const fullTrace = result.executionTrace;
+                const fullSlider = createTraceSlider(fullTrace, codeElem);
+                document.getElementById('slider-container').appendChild(fullSlider);
+
+                const condensedTrace = fullTrace.filter(getTraceStepFilter());
+                const condensedSlider = createTraceSlider(condensedTrace, codeElem);
+                document.getElementById('slider-container').appendChild(condensedSlider);
+            });
+        }
+    </script>
+</body>
+</html>
