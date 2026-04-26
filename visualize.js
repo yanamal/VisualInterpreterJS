@@ -123,17 +123,17 @@ function buildNestedHTML(code, ast, errorInfo = null) {
     // Sort tags:
     // - By position
     // - At same position: closes before opens (to properly nest)
-    // - Error markers come after closes but before opens at the same position
+    // - Error markers come before closes at the same position (so the marker is inside the innermost still-open node, not after it)
     // - For opens at same position: longer spans first (parents before children)
     // - For closes at same position: shorter spans first (children close before parents - not strictly necessary when everything is spans, but might as well)
     tags.sort(function (a, b) {
         if (a.pos !== b.pos) {
             return a.pos - b.pos;
         }
-        // At same position - define type priority: close=0, error=1, open=2
+        // At same position - define type priority: error=0, close=1, open=2
         function typePriority(tag) {
-            if (tag.type === 'close') return 0;
-            if (tag.type === 'error') return 1;
+            if (tag.type === 'error') return 0;
+            if (tag.type === 'close') return 1;
             return 2; // open
         }
 
@@ -893,7 +893,7 @@ function animateInterpreterState(stepResult, codeElem, duration=300){
             }
 
             // Show tooltip for the top node (unless animating too fast for it to be relevant)
-            if(duration > 200) {
+            if(duration >= 200) {
                 let tooltip = null;
                 if (exception) {
                     tooltip = showCodeTooltip(nodeEl, codeElem, exception.message, 'runtime-error');
