@@ -815,6 +815,7 @@ function stepAndTrace(interpreter, codeElem=null, anim_time=300){
 
 function getTraceStepFilter(
     include_produced_value=true, // this step completed evaluating a node AND the evaluation returned a value
+    include_exception=true, // this step produces an exception
     include_completed_node=true, // this step completed evaluating a node (regardless of whether the evaluation produced an explicit return value)
     include_side_effects=true, // this step did something that's considered a "side effect", e.g. changing the value of a variable
     include_pushed_node=false, // this step was a partial evaluation of a "parent" node that ended with pushing a child node onto the state stack
@@ -825,6 +826,9 @@ function getTraceStepFilter(
     return function(stepResult){
         if(exclude_types.includes(stepResult.activeNode.nodeType)) {
             return false;
+        }
+        if(include_exception && stepResult.exception) {
+            return true;
         }
         if(include_completed_node && stepResult.completedNode) {
             return true;
